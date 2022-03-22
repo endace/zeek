@@ -73,12 +73,12 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -E create_symlink
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/zeek-path-dev.sh
      "export ZEEKPATH=`${CMAKE_CURRENT_BINARY_DIR}/zeek-path-dev`\n"
      "export ZEEK_PLUGIN_PATH=\"${CMAKE_CURRENT_BINARY_DIR}/src\":${ZEEK_PLUGIN_PATH}\n"
-     "export PATH=\"${CMAKE_CURRENT_BINARY_DIR}/src\":$PATH\n")
+     "export PATH=\"${CMAKE_CURRENT_BINARY_DIR}/src\":\"\${CMAKE_CURRENT_BINARY_DIR}/auxil/spicy/bin\":$PATH\n")
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/zeek-path-dev.csh
      "setenv ZEEKPATH `${CMAKE_CURRENT_BINARY_DIR}/zeek-path-dev`\n"
      "setenv ZEEK_PLUGIN_PATH \"${CMAKE_CURRENT_BINARY_DIR}/src\":${ZEEK_PLUGIN_PATH}\n"
-     "setenv PATH \"${CMAKE_CURRENT_BINARY_DIR}/src\":$PATH\n")
+     "setenv PATH \"${CMAKE_CURRENT_BINARY_DIR}/src\":\"\${CMAKE_CURRENT_BINARY_DIR}/auxil/spicy/bin\":$PATH\n")
 
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" VERSION LIMIT_COUNT 1)
 execute_process(COMMAND grep "^#define  *BRO_PLUGIN_API_VERSION"
@@ -368,6 +368,52 @@ else ()
   set(broker_includes ${CMAKE_CURRENT_SOURCE_DIR}/auxil/broker/include ${CMAKE_CURRENT_BINARY_DIR}/auxil/broker/include)
 endif ()
 
+if ( NOT DISABLE_SPICY )
+    if ( NOT Spicy_ROOT )
+        add_subdirectory(auxil/spicy)
+
+        # Set variables used by the spicy-plugin build since we are building Spicy
+        # as part of Zeek so spicy-plugin cannot use `spicy-config` at configure
+        # time to set these.
+        set(SPICY_CONFIG "<builtin>")
+        set(HAVE_SPICY "YES")
+        set(SPICY_HAVE_TOOLCHAIN "YES")
+        set(SPICY_INCLUDE_DIRS_RUNTIME
+            ${CMAKE_SOURCE_DIR}/auxil/spicy/spicy/hilti/runtime/include
+            ${CMAKE_SOURCE_DIR}/auxil/spicy/spicy/spicy/runtime/include
+            ${CMAKE_BINARY_DIR}/auxil/spicy/spicy/include)
+        set(SPICY_INCLUDE_DIRS_TOOLCHAIN
+            ${CMAKE_SOURCE_DIR}/auxil/spicy/spicy/hilti/toolchain/include
+            ${CMAKE_SOURCE_DIR}/auxil/spicy/spicy/spicy/toolchain/include)
+        set(SPICY_LIBRARY spicy)
+
+        # Needed only for logging from CMake configure phase.
+        get_directory_property(
+            SPICY_VERSION
+            DIRECTORY ${CMAKE_SOURCE_DIR}/auxil/spicy/spicy
+            DEFINITION SPICY_VERSION)
+        get_directory_property(
+            SPICY_VERSION_NUMBER
+            DIRECTORY ${CMAKE_SOURCE_DIR}/auxil/spicy/spicy
+            DEFINITION SPICY_VERSION_NUMBER)
+        get_directory_property(
+            SPICY_PREFIX
+            DIRECTORY ${CMAKE_SOURCE_DIR}/auxil/spicy/spicy
+            DEFINITION CMAKE_INSTALL_PREFIX)
+        get_directory_property(
+            SPICY_BUILD_MODE
+            DIRECTORY ${CMAKE_SOURCE_DIR}/auxil/spicy/spicy
+            DEFINITION CMAKE_BUILD_TYPE)
+        set(SPICYC "<bundled>")
+    endif ()
+
+    if ( NOT SPICY_PLUGIN_PATH )
+        set(SPICY_PLUGIN_PATH ${CMAKE_SOURCE_DIR}/auxil/spicy-plugin)
+    endif ()
+
+    string(APPEND ZEEK_INCLUDE_PLUGINS ";${SPICY_PLUGIN_PATH}")
+endif ()
+
 include_directories(BEFORE
                     ${PCAP_INCLUDE_DIR}
                     ${BIND_INCLUDE_DIR}
@@ -607,6 +653,15 @@ CheckOptionalBuildSources(auxil/zeekctl   ZeekControl INSTALL_ZEEKCTL)
 CheckOptionalBuildSources(auxil/zeek-aux  Zeek-Aux  INSTALL_AUX_TOOLS)
 CheckOptionalBuildSources(auxil/zeek-archiver ZeekArchiver INSTALL_ZEEK_ARCHIVER)
 CheckOptionalBuildSources(auxil/zeek-client ZeekClient INSTALL_ZEEK_CLIENT)
+
+# At this point the `spicyz` target exists. Make sure we build it after spicy
+# is available.
+if ( NOT DISABLE_SPICY )
+    if ( NOT Spicy_ROOT )
+        add_dependencies(plugin-_Zeek-Spicy spicy)
+        add_dependencies(spicyz spicy)
+    endif ()
+endif ()
 
 ########################################################################
 ## Packaging Setup

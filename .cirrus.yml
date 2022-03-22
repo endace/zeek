@@ -12,9 +12,11 @@ memory: &MEMORY 4GB
 
 config: &CONFIG --build-type=release --disable-broker-tests --prefix=$CIRRUS_WORKING_DIR/install
 static_config: &STATIC_CONFIG --build-type=release --disable-broker-tests --enable-static-broker --enable-static-binpac --prefix=$CIRRUS_WORKING_DIR/install
-sanitizer_config: &SANITIZER_CONFIG --build-type=debug --disable-broker-tests --sanitizers=address,undefined --enable-fuzzers --enable-coverage
+sanitizer_config: &SANITIZER_CONFIG --build-type=debug --disable-broker-tests --sanitizers=address,undefined --enable-fuzzers --enable-coverage --disable-spicy
 mobile_ipv6_config: &MOBILE_IPV6_CONFIG --build-type=release --enable-mobile-ipv6 --disable-broker-tests --prefix=$CIRRUS_WORKING_DIR/install
 openssl30_config: &OPENSSL30_CONFIG --build-type=release --disable-broker-tests --with-openssl=/opt/openssl --prefix=$CIRRUS_WORKING_DIR/install
+without_spicy_config: &WITHOUT_SPICY_CONFIG --disable-spicy
+homebrew_flex_bison_config: &HOMEBREW_FLEX_BISON_CONFIG --with-flex=/usr/local/opt/flex/bin/flex --with-bison=/usr/local/opt/bison/bin/bison
 
 resources_template: &RESOURCES_TEMPLATE
   cpu: *CPUS
@@ -166,6 +168,8 @@ debian9_32bit_task:
     dockerfile: ci/debian-9-32bit/Dockerfile
     << : *RESOURCES_TEMPLATE
   << : *CI_TEMPLATE
+  env:
+    ZEEK_CI_CONFIGURE_FLAGS: *WITHOUT_SPICY_CONFIG
 
 opensuse_leap_15_3_task:
   container:
@@ -214,6 +218,8 @@ macos_monterey_task:
   prepare_script: ./ci/macos/prepare.sh
   << : *CI_TEMPLATE
   << : *MACOS_RESOURCES_TEMPLATE
+  env:
+    ZEEK_CI_CONFIGURE_FLAGS: *HOMEBREW_FLEX_BISON_CONFIG
 
 macos_big_sur_task:
   macos_instance:
@@ -221,6 +227,8 @@ macos_big_sur_task:
   prepare_script: ./ci/macos/prepare.sh
   << : *CI_TEMPLATE
   << : *MACOS_RESOURCES_TEMPLATE
+  env:
+    ZEEK_CI_CONFIGURE_FLAGS: *HOMEBREW_FLEX_BISON_CONFIG
 
 # FreeBSD EOL timelines: https://www.freebsd.org/security/security.html#sup
 freebsd14_task:
