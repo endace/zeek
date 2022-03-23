@@ -71,13 +71,37 @@ export {
 	##
 	## reqid: the request identifier used in the request event.
 	##
-	## result: a :zeek:type`vector` of :zeek:see:`Management::Result`
+	## result: a :zeek:type:`vector` of :zeek:see:`Management::Result`
 	##     records. Each record covers one cluster instance. Each record's data
 	##     member is a vector of :zeek:see:`Management::NodeStatus`
 	##     records, covering the nodes at that instance. Results may also indicate
 	##     failure, with error messages indicating what went wrong.
 	global get_nodes_response: event(reqid: string,
 	    result: Management::ResultVec);
+
+
+	## zeek-client sends this event to retrieve the current value
+	## of a variable in Zeek's global namespace, referenced by the
+	## given identifier (i.e. variable name). The controller instructs
+	## all agents to retrieve this value from each data cluster Zeek
+	## node, and accumulates the returned responses.
+	##
+	## reqid: a request identifier string, echoed in the response event.
+	##
+	## id: the name of the variable whose value to retrieve.
+	global get_id_value_request: event(reqid: string, id: string);
+
+	## Response to a get_id_value_request event. The controller sends this back to the client.
+	##
+	## reqid: the request identifier used in the request event.
+	##
+	## result: a :zeek:type:`vector` of :zeek:see:`Management::Result`
+	##     records. Each record covers one Zeek data cluster node. Each
+	##     record's data field contains a string with the JSON rendering
+	##     (as produced by :zeek:id:`to_json`, including the error
+	##     strings it potentially returns).
+	##
+	global get_id_value_response: event(reqid: string, result: Management::ResultVec);
 
 
 	# Testing events. These don't provide operational value but expose

@@ -60,8 +60,32 @@ export {
 	##     records, covering the nodes at this instance. The result may also
 	##     indicate failure, with error messages indicating what went wrong.
 	##
-	global get_nodes_response: event(reqid: string,
-	    result: Management::Result);
+	global get_nodes_response: event(reqid: string, result: Management::Result);
+
+
+	## The controller sends this to every agent to retrieve the current
+	## value of a variable in Zeek's global namespace, referenced by the
+	## given identifier (i.e. variable name). This is the controller-agent
+	## equivalent of :zeek:see:`Management::Controller::API::get_id_value_request`.
+	##
+	## reqid: a request identifier string, echoed in the response event.
+	##
+	## id: the name of the variable whose value to retrieve.
+	global get_id_value_request: event(reqid: string, id: string);
+
+	## Response to a get_id_value_request event. The agents send this back
+	## to the controller. This is the controller-agent equivalent of
+	## :zeek:see:`Management::Controller::API::get_id_value_response`.
+	##
+	## reqid: the request identifier used in the request event.
+	##
+	## result: a :zeek:type:`vector` of :zeek:see:`Management::Result`
+	##     records. Each record covers one Zeek data cluster node managed
+	##     by this agent. Each record's data field contains a string with
+	##     the JSON rendering of the value (as produced by :zeek:id:`to_json`,
+	##     including the error strings it potentially returns).
+	global get_id_value_response: event(reqid: string, result: Management::ResultVec);
+
 
 	## The controller sends this event to confirm to the agent that it is
 	## part of the current cluster topology. The agent acknowledges with the
