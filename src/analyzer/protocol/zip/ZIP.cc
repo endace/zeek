@@ -59,7 +59,10 @@ void ZIP_Analyzer::DeliverStream(int len, const u_char* data, bool orig)
 	zip->next_in = (Bytef*)data;
 	zip->avail_in = len;
 
-	Bytef* orig_next_in = zip->next_in;
+	// const_cast here because on some rare systems next_in is defined as a
+	// const pointer and the compiler will throw an error about the conversion.
+	// On most systems, next_in isn't const and so this operation is a no-op.
+	Bytef* orig_next_in = const_cast<Bytef*>(zip->next_in);
 	size_t orig_avail_in = zip->avail_in;
 
 	while ( true )
